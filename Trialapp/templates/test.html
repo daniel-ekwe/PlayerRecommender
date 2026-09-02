@@ -1,0 +1,468 @@
+<style>
+    :root {
+        font-family: Arial, Helvetica, sans-serif;
+        color: #172033;
+        background: #eef2f7;
+    }
+
+    body {
+        margin: 0;
+        background: #eef2f7;
+    }
+
+    header {
+        background: #102a43;
+        padding: 18px 6%;
+    }
+
+    header a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 1.35rem;
+    }
+
+    header span {
+        margin-right: 8px;
+    }
+
+    main {
+        width: min(1180px, 88%);
+        margin: 32px auto 60px;
+    }
+
+    h1, h2, h3 {
+        color: #102a43;
+    }
+
+    .search-bar,
+    .profile-dashboard,
+    .stats-container,
+    .results-panel {
+        background: #fff;
+        border: 1px solid #d7e0ea;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(16, 42, 67, 0.08);
+    }
+
+    .search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        padding: 16px;
+        position: relative;
+    }
+
+    .search-field {
+        flex: 1;
+        min-width: 220px;
+        position: relative;
+    }
+
+    .search-bar input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #b8c7d9;
+        border-radius: 6px;
+    }
+
+    button {
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 6px;
+        background: #d97706;
+        color: #fff;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .results-panel,
+    .profile-dashboard,
+    .stats-container {
+        margin-top: 24px;
+        padding: 24px;
+    }
+
+    .results-panel h2 {
+        margin-top: 0;
+    }
+
+    .results-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+        padding: 0;
+        list-style: none;
+    }
+
+    .results-list a {
+        display: block;
+        padding: 12px 14px;
+        border: 1px solid #d7e0ea;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #102a43;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .results-list a:hover,
+    .results-list a:focus {
+        background: #dbeafe;
+        border-color: #7aa7d9;
+    }
+
+    .live-dropdown {
+        position: absolute;
+        z-index: 10;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        display: none;
+        margin: 0;
+        padding: 6px;
+        list-style: none;
+        background: #fff;
+        border: 1px solid #b8c7d9;
+        border-radius: 8px;
+        box-shadow: 0 8px 18px rgba(16, 42, 67, 0.16);
+    }
+
+    .live-dropdown.visible {
+        display: block;
+    }
+
+    .live-dropdown a {
+        display: block;
+        padding: 10px 12px;
+        border-radius: 5px;
+        color: #102a43;
+        text-decoration: none;
+    }
+
+    .live-dropdown a:hover,
+    .live-dropdown a:focus {
+        background: #dbeafe;
+    }
+
+    .profile-dashboard {
+        display: grid;
+        grid-template-columns: 1.2fr 2fr;
+        gap: 24px;
+        background: #f8fafc;
+    }
+
+    .profile-summary {
+        padding-right: 24px;
+        border-right: 1px solid #d7e0ea;
+    }
+
+    .profile-summary h2 {
+        margin-top: 0;
+        font-size: 2rem;
+    }
+
+    .profile-facts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .profile-fact {
+        padding: 12px;
+        background: #fff;
+        border: 1px solid #d7e0ea;
+        border-radius: 8px;
+    }
+
+    .profile-fact small {
+        display: block;
+        margin-bottom: 5px;
+        color: #627d98;
+        text-transform: uppercase;
+    }
+
+    .team-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0;
+        list-style: none;
+    }
+
+    .team-list li {
+        padding: 7px 10px;
+        background: #dbeafe;
+        border-radius: 999px;
+    }
+
+    .dashboard-overview h2 {
+        margin-top: 0;
+    }
+
+    .overview-copy {
+        color: #486581;
+        line-height: 1.6;
+    }
+
+    .stats-container {
+        overflow: hidden;
+    }
+
+    .stats-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .stats-nav a {
+        padding: 8px 12px;
+        border: 1px solid #b8c7d9;
+        border-radius: 6px;
+        color: #102a43;
+        text-decoration: none;
+    }
+
+    .stats-nav a:hover {
+        background: #dbeafe;
+    }
+
+    .table-scroll {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        min-width: 900px;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+
+    caption {
+        margin-bottom: 10px;
+        text-align: left;
+        font-weight: bold;
+        color: #102a43;
+    }
+
+    th, td {
+        padding: 10px;
+        border: 1px solid #d7e0ea;
+        white-space: nowrap;
+    }
+
+    thead th {
+        background: #102a43;
+        color: #fff;
+    }
+
+    tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    @media (max-width: 760px) {
+        .profile-dashboard {
+            grid-template-columns: 1fr;
+        }
+
+        .profile-summary {
+            padding-right: 0;
+            padding-bottom: 20px;
+            border-right: 0;
+            border-bottom: 1px solid #d7e0ea;
+        }
+    }
+</style>
+
+<header>
+    <a href="/" aria-label="Return to Fit Finder home">
+        <span aria-hidden="true">&#127936;</span>
+        <strong>Fit Finder</strong>
+    </a>
+</header>
+
+<main>
+    <h1>Player Search</h1>
+
+    <form method="get" class="search-bar">
+        <label for="player-search">Search for a player:</label>
+        <div class="search-field">
+            <input id="player-search" type="text" name="q" value="{{ query }}" autocomplete="off" placeholder="Search for a player" aria-controls="live-player-results" aria-expanded="false">
+            <ul id="live-player-results" class="live-dropdown" role="listbox"></ul>
+        </div>
+        <button type="submit">Search</button>
+    </form>
+
+    {% if query and not player %}
+        {% if players %}
+            <section class="results-panel">
+                <h2>Matching Players</h2>
+                <ul class="results-list">
+                    {% for item in players %}
+                        <li>
+                            <a href="?q={{ query|urlencode }}&amp;selected={{ item.pk }}&amp;tab=per_game">{{ item.name }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% else %}
+            <p>No players found for "{{ query }}".</p>
+        {% endif %}
+    {% endif %}
+
+    {% if player %}
+        <section class="profile-dashboard">
+            <div class="profile-summary">
+            <h2>{{ player.name }}</h2>
+            <div class="profile-facts">
+                <div class="profile-fact"><small>Position</small><strong>{{ player.pos|default:'-' }}</strong></div>
+                <div class="profile-fact"><small>College</small><strong>{{ player.colleges|default:'-' }}</strong></div>
+                <div class="profile-fact"><small>Years</small><strong>{{ player.from_year|default:'-' }} - {{ player.to_year|default:'-' }}</strong></div>
+                <div class="profile-fact"><small>Height</small><strong>{% if height_feet is not None %}{{ height_feet }} ft {{ height_inches }} in{% else %}-{% endif %}</strong></div>
+                <div class="profile-fact"><small>Weight</small><strong>{{ player.wt|default:'-' }} lbs</strong></div>
+            </div>
+            </div>
+
+            <div class="dashboard-overview">
+            <h2>Career Overview</h2>
+            <p class="overview-copy">A season-by-season view of {{ player.name }}'s career performance.</p>
+            <h3>Teams Played For</h3>
+            {% if team_history %}
+                <ul class="team-list">
+                    {% for team in team_history %}
+                        <li>{{ team }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No team history available.</p>
+            {% endif %}
+            </div>
+        </section>
+
+        <section class="stats-container">
+            <h2>Stats By Year</h2>
+            <nav class="stats-nav" aria-label="Stat categories">
+                <a href="?q={{ query|urlencode }}&amp;selected={{ player.pk }}&amp;tab=per_game">Per Game</a> |
+                <a href="?q={{ query|urlencode }}&amp;selected={{ player.pk }}&amp;tab=shooting">Shooting</a> |
+                <a href="?q={{ query|urlencode }}&amp;selected={{ player.pk }}&amp;tab=totals">Totals</a>
+            </nav>
+
+            {% if stat_rows %}
+                {% if tab == 'shooting' %}
+                    <div class="table-scroll"><table>
+                        <caption>Shooting statistics by season</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Year</th><th scope="col">Team</th><th scope="col">FG%</th><th scope="col">3P%</th><th scope="col">2P%</th><th scope="col">eFG%</th><th scope="col">FT%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in stat_rows %}
+                                <tr>
+                                    <th scope="row">{{ stat.season }}</th><td>{{ stat.team|default:'-' }}</td><td>{{ stat.fg_percent|default:'-' }}</td><td>{{ stat.x3p_percent|default:'-' }}</td><td>{{ stat.x2p_percent|default:'-' }}</td><td>{{ stat.e_fg_percent|default:'-' }}</td><td>{{ stat.ft_percent|default:'-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table></div>
+                {% elif tab == 'totals' %}
+                    <div class="table-scroll"><table>
+                        <caption>Total statistics by season</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Year</th><th scope="col">Team</th><th scope="col">G</th><th scope="col">GS</th><th scope="col">MP</th><th scope="col">FGM</th><th scope="col">FGA</th><th scope="col">FG%</th><th scope="col">3PM</th><th scope="col">3PA</th><th scope="col">3P%</th><th scope="col">2PM</th><th scope="col">2PA</th><th scope="col">2P%</th><th scope="col">FTM</th><th scope="col">FTA</th><th scope="col">FT%</th><th scope="col">REB</th><th scope="col">AST</th><th scope="col">STL</th><th scope="col">BLK</th><th scope="col">PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in stat_rows %}
+                                <tr>
+                                    <th scope="row">{{ stat.season }}</th><td>{{ stat.team|default:'-' }}</td><td>{{ stat.g|default:'-' }}</td><td>{{ stat.gs|default:'-' }}</td><td>{{ stat.mp|default:'-' }}</td><td>{{ stat.fg|default:'-' }}</td><td>{{ stat.fga|default:'-' }}</td><td>{{ stat.fg_percent|default:'-' }}</td><td>{{ stat.x3p|default:'-' }}</td><td>{{ stat.x3pa|default:'-' }}</td><td>{{ stat.x3p_percent|default:'-' }}</td><td>{{ stat.x2p|default:'-' }}</td><td>{{ stat.x2pa|default:'-' }}</td><td>{{ stat.x2p_percent|default:'-' }}</td><td>{{ stat.ft|default:'-' }}</td><td>{{ stat.fta|default:'-' }}</td><td>{{ stat.ft_percent|default:'-' }}</td><td>{{ stat.trb|default:'-' }}</td><td>{{ stat.ast|default:'-' }}</td><td>{{ stat.stl|default:'-' }}</td><td>{{ stat.blk|default:'-' }}</td><td>{{ stat.pts|default:'-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table></div>
+                {% else %}
+                    <div class="table-scroll"><table>
+                        <caption>Per-game statistics by season</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Year</th><th scope="col">Team</th><th scope="col">G</th><th scope="col">GS</th><th scope="col">MPG</th><th scope="col">FGM</th><th scope="col">FGA</th><th scope="col">FG%</th><th scope="col">3PM</th><th scope="col">3PA</th><th scope="col">3P%</th><th scope="col">2PM</th><th scope="col">2PA</th><th scope="col">2P%</th><th scope="col">FTM</th><th scope="col">FTA</th><th scope="col">FT%</th><th scope="col">REB</th><th scope="col">AST</th><th scope="col">STL</th><th scope="col">BLK</th><th scope="col">PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in stat_rows %}
+                                <tr>
+                                    <th scope="row">{{ stat.season }}</th><td>{{ stat.team|default:'-' }}</td><td>{{ stat.g|default:'-' }}</td><td>{{ stat.gs|default:'-' }}</td><td>{{ stat.mp_per_game|default:'-' }}</td><td>{{ stat.fg_per_game|default:'-' }}</td><td>{{ stat.fga_per_game|default:'-' }}</td><td>{{ stat.fg_percent|default:'-' }}</td><td>{{ stat.x3p_per_game|default:'-' }}</td><td>{{ stat.x3pa_per_game|default:'-' }}</td><td>{{ stat.x3p_percent|default:'-' }}</td><td>{{ stat.x2p_per_game|default:'-' }}</td><td>{{ stat.x2pa_per_game|default:'-' }}</td><td>{{ stat.x2p_percent|default:'-' }}</td><td>{{ stat.ft_per_game|default:'-' }}</td><td>{{ stat.fta_per_game|default:'-' }}</td><td>{{ stat.ft_percent|default:'-' }}</td><td>{{ stat.trb_per_game|default:'-' }}</td><td>{{ stat.ast_per_game|default:'-' }}</td><td>{{ stat.stl_per_game|default:'-' }}</td><td>{{ stat.blk_per_game|default:'-' }}</td><td>{{ stat.pts_per_game|default:'-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table></div>
+                {% endif %}
+            {% else %}
+                <p>No {{ tab }} stat data available.</p>
+            {% endif %}
+        </section>
+    {% endif %}
+</main>
+
+<script>
+    const searchInput = document.getElementById('player-search');
+    const liveResults = document.getElementById('live-player-results');
+    let searchRequest;
+
+    function closeLiveResults() {
+        liveResults.classList.remove('visible');
+        searchInput.setAttribute('aria-expanded', 'false');
+    }
+
+    searchInput.addEventListener('input', async function () {
+        const query = searchInput.value.trim();
+        liveResults.innerHTML = '';
+
+        if (query.length < 2) {
+            closeLiveResults();
+            return;
+        }
+
+        if (searchRequest) {
+            searchRequest.abort();
+        }
+        searchRequest = new AbortController();
+
+        try {
+            const response = await fetch(`?format=json&q=${encodeURIComponent(query)}`, {
+                signal: searchRequest.signal
+            });
+            const data = await response.json();
+
+            data.players.forEach(function (player) {
+                const item = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `?q=${encodeURIComponent(player.name)}&selected=${player.id}&tab=per_game`;
+                link.textContent = player.name;
+                link.setAttribute('role', 'option');
+                item.appendChild(link);
+                liveResults.appendChild(item);
+            });
+
+            if (data.players.length) {
+                liveResults.classList.add('visible');
+                searchInput.setAttribute('aria-expanded', 'true');
+            } else {
+                closeLiveResults();
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                closeLiveResults();
+            }
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.search-field')) {
+            closeLiveResults();
+        }
+    });
+</script>
