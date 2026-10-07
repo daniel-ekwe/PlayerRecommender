@@ -2,6 +2,10 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
+
+BACKEND_DIR = Path(__file__).resolve().parent / 'Backend'
+sys.path.insert(0, str(BACKEND_DIR))
 
 
 def main():

@@ -1,8 +1,14 @@
 import csv
 from datetime import datetime
-
 import os
+import sys
+from pathlib import Path
+
 import django
+
+BACKEND_DIR = Path(__file__).resolve().parent / "Backend"
+DATA_DIR = BACKEND_DIR / "data"
+sys.path.insert(0, str(BACKEND_DIR))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "PlayerRecommender.settings")
 django.setup()
@@ -11,6 +17,10 @@ from django.utils.timezone import make_aware
 from Trialapp.models import (
     Player,
     PlayerSeason,
+    TeamSeasonSummary,
+    PlayerDraftHistory,
+    PlayerAwardShare,
+    PlayerEndOfSeasonTeam,
     PlayerPerGameStat,
     PlayerShootingStat,
     PlayerTotalsStat,
@@ -55,7 +65,7 @@ def parse_datetime(value):
 
 
 def import_career_info():
-    file_path = os.path.join("data", "Player Career Info.csv")
+    file_path = DATA_DIR / "Player Career Info.csv"
     with open(file_path, newline="", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         count = 0
@@ -86,7 +96,7 @@ def import_career_info():
 
 
 def import_season_info():
-    file_path = os.path.join("data", "Player Season Info.csv")
+    file_path = DATA_DIR / "Player Season Info.csv"
     with open(file_path, newline="", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         count = 0
@@ -113,8 +123,137 @@ def import_season_info():
     print(f"Imported season rows: {count}")
 
 
+def import_team_summaries():
+    file_path = DATA_DIR / "Team Summaries.csv"
+    with open(file_path, newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        count = 0
+
+        for row in reader:
+            TeamSeasonSummary.objects.update_or_create(
+                season=parse_int(row.get("season")) or 0,
+                abbreviation=(row.get("abbreviation") or "").strip().upper(),
+                defaults={
+                    "lg": row.get("lg", "").strip(),
+                    "team": row.get("team", "").strip(),
+                    "playoffs": str(row.get("playoffs", "")).strip().lower() == "true",
+                    "age": parse_float(row.get("age")),
+                    "w": parse_int(row.get("w")),
+                    "l": parse_int(row.get("l")),
+                    "pw": parse_int(row.get("pw")),
+                    "pl": parse_int(row.get("pl")),
+                    "mov": parse_float(row.get("mov")),
+                    "sos": parse_float(row.get("sos")),
+                    "srs": parse_float(row.get("srs")),
+                    "o_rtg": parse_float(row.get("o_rtg")),
+                    "d_rtg": parse_float(row.get("d_rtg")),
+                    "n_rtg": parse_float(row.get("n_rtg")),
+                    "pace": parse_float(row.get("pace")),
+                    "arena": row.get("arena", "").strip(),
+                    "attend": parse_int(row.get("attend")),
+                    "attend_g": parse_int(row.get("attend_g")),
+                },
+            )
+            count += 1
+
+    print(f"Imported team summary rows: {count}")
+
+
+def import_draft_history():
+    file_path = DATA_DIR / "Draft Pick History.csv"
+    with open(file_path, newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        count = 0
+
+        for row in reader:
+            player_id = (row.get("player_id") or "").strip()
+            player = Player.objects.filter(player_id=player_id).first()
+            if not player:
+                continue
+
+            PlayerDraftHistory.objects.update_or_create(
+                player=player,
+                season=parse_int(row.get("season")) or 0,
+                defaults={
+                    "lg": row.get("lg", "").strip(),
+                    "overall_pick": parse_int(row.get("overall_pick")),
+                    "round": parse_int(row.get("round")),
+                    "team": row.get("tm", "").strip(),
+                    "college": row.get("college", "").strip(),
+                },
+            )
+            count += 1
+
+    print(f"Imported draft rows: {count}")
+
+
+def import_award_shares():
+    file_path = DATA_DIR / "Player Award Shares.csv"
+    with open(file_path, newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        count = 0
+
+        for row in reader:
+            player_id = (row.get("player_id") or "").strip()
+            player = Player.objects.filter(player_id=player_id).first()
+            if not player:
+                continue
+
+            PlayerAwardShare.objects.update_or_create(
+                player=player,
+                season=parse_int(row.get("season")) or 0,
+                award=row.get("award", "").strip(),
+                defaults={
+                    "age": parse_int(row.get("age")),
+                    "first": parse_int(row.get("first")),
+                    "pts_won": parse_float(row.get("pts_won")),
+                    "pts_max": parse_float(row.get("pts_max")),
+                    "share": parse_float(row.get("share")),
+                    "winner": str(row.get("winner", "")).strip().lower() == "true",
+                },
+            )
+            count += 1
+
+    print(f"Imported award rows: {count}")
+
+
+def import_end_of_season_teams():
+    PlayerEndOfSeasonTeam.objects.all().delete()
+    count = 0
+
+    file_path = DATA_DIR / "End of Season Teams.csv"
+    with open(file_path, newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+
+        for row in reader:
+            player_id = (row.get("player_id") or "").strip()
+            player = Player.objects.filter(player_id=player_id).first()
+            if not player:
+                continue
+
+            PlayerEndOfSeasonTeam.objects.update_or_create(
+                player=player,
+                season=parse_int(row.get("season")) or 0,
+                team_type=row.get("type", "").strip(),
+                number_tm=row.get("number_tm", "").strip(),
+                defaults={
+                    "lg": row.get("lg", "").strip(),
+                    "position": row.get("position", "").strip(),
+                    "pts_won": parse_float(row.get("pts_won")),
+                    "pts_max": parse_float(row.get("pts_max")),
+                    "share": parse_float(row.get("share")),
+                    "first_team_votes": parse_float(row.get("x1st_tm")),
+                    "second_team_votes": parse_float(row.get("x2nd_tm")),
+                    "third_team_votes": parse_float(row.get("x3rd_tm")),
+                },
+            )
+            count += 1
+
+    print(f"Imported end-of-season rows: {count}")
+
+
 def import_per_game_stats():
-    file_path = os.path.join("data", "Player Per Game.csv")
+    file_path = DATA_DIR / "Player Per Game.csv"
     with open(file_path, newline="", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         count = 0
@@ -163,7 +302,7 @@ def import_per_game_stats():
 
 
 def import_shooting_stats():
-    file_path = os.path.join("data", "Player Shooting.csv")
+    file_path = DATA_DIR / "Player Shooting.csv"
     with open(file_path, newline="", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         count = 0
@@ -193,7 +332,7 @@ def import_shooting_stats():
 
 
 def import_totals_stats():
-    file_path = os.path.join("data", "Player Totals.csv")
+    file_path = DATA_DIR / "Player Totals.csv"
     with open(file_path, newline="", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         count = 0
@@ -244,6 +383,10 @@ def import_totals_stats():
 if __name__ == "__main__":
     import_career_info()
     import_season_info()
+    import_team_summaries()
+    import_draft_history()
+    import_award_shares()
+    import_end_of_season_teams()
     import_per_game_stats()
     import_shooting_stats()
     import_totals_stats()
