@@ -1,0 +1,190 @@
+<style>
+    :root {
+        font-family: Arial, Helvetica, sans-serif;
+        color: #172033;
+        background: #eef2f7;
+    }
+
+    body {
+        margin: 0;
+        background: #eef2f7;
+    }
+
+    header {
+        background: #102a43;
+        padding: 18px 6%;
+    }
+
+    header a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 1.35rem;
+    }
+
+    main {
+        width: min(1180px, 88%);
+        margin: 32px auto 60px;
+    }
+
+    .team-hero,
+    .team-history {
+        background: #fff;
+        border: 1px solid #d7e0ea;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(16, 42, 67, 0.08);
+        padding: 24px;
+        margin-top: 24px;
+    }
+
+    .team-hero {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background: #f8fafc;
+    }
+
+    .team-logo {
+        width: 110px;
+        height: 110px;
+        object-fit: contain;
+    }
+
+    .team-fallback {
+        display: grid;
+        place-items: center;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: #102a43;
+        color: #fff;
+        font-size: 1.3rem;
+        font-weight: bold;
+    }
+
+    .team-hero h1 {
+        margin: 0 0 8px;
+        color: #102a43;
+    }
+
+    .facts {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .fact {
+        padding: 14px;
+        background: #f8fafc;
+        border: 1px solid #d7e0ea;
+        border-radius: 8px;
+    }
+
+    .fact small {
+        display: block;
+        margin-bottom: 5px;
+        color: #627d98;
+        text-transform: uppercase;
+    }
+
+    .table-scroll {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        min-width: 950px;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    th, td {
+        padding: 10px;
+        border: 1px solid #d7e0ea;
+        white-space: nowrap;
+    }
+
+    thead th {
+        background: #102a43;
+        color: #fff;
+    }
+
+    tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    @media (max-width: 760px) {
+        .team-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .facts {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+</style>
+
+<header>
+    <a href="/" aria-label="Return to Fit Finder home">&#127936; <strong>Fit Finder</strong></a>
+</header>
+
+<main>
+    <p><a href="/">Back to player search</a></p>
+
+    <section class="team-hero">
+        {% if team.logo %}
+            <img class="team-logo" src="{{ team.logo }}" alt="{{ team.name }} logo">
+        {% else %}
+            <span class="team-fallback" aria-label="{{ team.name }}">{{ team.code }}</span>
+        {% endif %}
+        <div>
+            <h1>{{ team.name }}</h1>
+            <p>Team profile · {{ team.code }}</p>
+        </div>
+    </section>
+
+    {% if latest_summary %}
+        <section class="facts">
+            <div class="fact"><small>Latest season</small><strong>{{ latest_summary.season }}</strong></div>
+            <div class="fact"><small>Record</small><strong>{{ latest_summary.w|default:'-' }} - {{ latest_summary.l|default:'-' }}</strong></div>
+            <div class="fact"><small>Playoffs</small><strong>{% if latest_summary.playoffs %}Yes{% else %}No{% endif %}</strong></div>
+            <div class="fact"><small>Arena</small><strong>{{ latest_summary.arena|default:'-' }}</strong></div>
+            <div class="fact"><small>Point differential</small><strong>{{ latest_summary.mov|default:'-' }}</strong></div>
+            <div class="fact"><small>Offensive rating</small><strong>{{ latest_summary.o_rtg|default:'-' }}</strong></div>
+            <div class="fact"><small>Defensive rating</small><strong>{{ latest_summary.d_rtg|default:'-' }}</strong></div>
+            <div class="fact"><small>Attendance</small><strong>{{ latest_summary.attend|default:'-' }}</strong></div>
+        </section>
+    {% endif %}
+
+    <section class="team-history">
+        <h2>Team History</h2>
+        {% if summaries %}
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Season</th><th>League</th><th>Record</th><th>Playoffs</th><th>Point Differential</th><th>Offensive Rating</th><th>Defensive Rating</th><th>Arena</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for summary in summaries %}
+                            <tr>
+                                <th>{{ summary.season }}</th>
+                                <td>{{ summary.lg|default:'-' }}</td>
+                                <td>{{ summary.w|default:'-' }} - {{ summary.l|default:'-' }}</td>
+                                <td>{% if summary.playoffs %}Yes{% else %}No{% endif %}</td>
+                                <td>{{ summary.mov|default:'-' }}</td>
+                                <td>{{ summary.o_rtg|default:'-' }}</td>
+                                <td>{{ summary.d_rtg|default:'-' }}</td>
+                                <td>{{ summary.arena|default:'-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No team summary data is available for this team.</p>
+        {% endif %}
+    </section>
+</main>
