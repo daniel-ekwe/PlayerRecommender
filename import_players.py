@@ -18,6 +18,7 @@ from Trialapp.models import (
     Player,
     PlayerSeason,
     TeamSeasonSummary,
+    TeamSeasonStat,
     PlayerDraftHistory,
     PlayerAwardShare,
     PlayerEndOfSeasonTeam,
@@ -157,6 +158,49 @@ def import_team_summaries():
             count += 1
 
     print(f"Imported team summary rows: {count}")
+
+
+def parse_team_stat_value(value):
+    if value is None or value.strip() in {"", "NA"}:
+        return None
+    try:
+        number = float(value)
+    except ValueError:
+        return value
+    return int(number) if number.is_integer() else number
+
+
+def import_team_stats(file_name, stat_type):
+    file_path = DATA_DIR / file_name
+    with open(file_path, newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        count = 0
+        metadata_fields = {"season", "lg", "team", "abbreviation", "playoffs"}
+
+        for row in reader:
+            abbreviation = (row.get("abbreviation") or "").strip().upper()
+            if not abbreviation or abbreviation == "3TM":
+                continue
+
+            stats = {
+                field: parse_team_stat_value(value)
+                for field, value in row.items()
+                if field not in metadata_fields
+            }
+            TeamSeasonStat.objects.update_or_create(
+                season=parse_int(row.get("season")) or 0,
+                abbreviation=abbreviation,
+                stat_type=stat_type,
+                defaults={
+                    "lg": row.get("lg", "").strip(),
+                    "team": row.get("team", "").strip(),
+                    "playoffs": str(row.get("playoffs", "")).strip().lower() == "true",
+                    "stats": stats,
+                },
+            )
+            count += 1
+
+    print(f"Imported {stat_type} team stat rows: {count}")
 
 
 def import_draft_history():
@@ -384,6 +428,8 @@ if __name__ == "__main__":
     import_career_info()
     import_season_info()
     import_team_summaries()
+    import_team_stats("Team Stats Per Game.csv", TeamSeasonStat.PER_GAME)
+    import_team_stats("Team Stats Per 100 Poss.csv", TeamSeasonStat.PER_100)
     import_draft_history()
     import_award_shares()
     import_end_of_season_teams()

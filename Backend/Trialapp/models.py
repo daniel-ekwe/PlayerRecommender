@@ -47,6 +47,35 @@ class TeamSeasonSummary(models.Model):
         return f"{self.team} - {self.season}"
 
 
+class TeamSeasonStat(models.Model):
+    PER_GAME = 'per_game'
+    PER_100 = 'per_100'
+    STAT_TYPES = [
+        (PER_GAME, 'Per game'),
+        (PER_100, 'Per 100 possessions'),
+    ]
+
+    season = models.IntegerField()
+    lg = models.CharField(max_length=20, blank=True)
+    team = models.CharField(max_length=100)
+    abbreviation = models.CharField(max_length=10)
+    stat_type = models.CharField(max_length=20, choices=STAT_TYPES)
+    playoffs = models.BooleanField(default=False)
+    stats = models.JSONField(default=dict)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['season', 'abbreviation', 'stat_type'],
+                name='unique_team_season_stat_type',
+            ),
+        ]
+        ordering = ['-season', 'team', 'stat_type']
+
+    def __str__(self):
+        return f"{self.team} - {self.season} ({self.stat_type})"
+
+
 class PlayerSeason(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='seasons')
     season = models.IntegerField()
