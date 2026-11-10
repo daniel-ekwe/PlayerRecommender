@@ -10,25 +10,62 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
+import secrets
+import sys
 from pathlib import Path
+from urllib.parse import urlparse
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+def env_list(name, default=()):
+    return [value.strip() for value in os.getenv(name, '').split(',') if value.strip()] or list(default)
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-c5v)fus$k$h!zn=p@u*pr8g4a^aagsc=6t5-!&qn=esup@qqcg'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+IS_APP_SERVICE = bool(os.getenv('WEBSITE_SITE_NAME'))
+DEBUG = os.getenv(
+    'DJANGO_DEBUG',
+    'false' if IS_APP_SERVICE else 'true',
+).lower() in {'1', 'true', 'yes'}
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if IS_APP_SERVICE and not DEBUG:
+        raise ImproperlyConfigured('DJANGO_SECRET_KEY must be configured outside development.')
+    SECRET_KEY = secrets.token_urlsafe(50)
 
-ALLOWED_HOSTS = []
+azure_host = os.getenv('WEBSITE_HOSTNAME')
+ALLOWED_HOSTS = env_list(
+    'DJANGO_ALLOWED_HOSTS',
+    [azure_host] if azure_host else ['localhost', '127.0.0.1', 'testserver'],
+)
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured('DJANGO_ALLOWED_HOSTS must contain the App Service hostname.')
+
+FRONTEND_ORIGIN = os.getenv('FRONTEND_ORIGIN', '').rstrip('/')
+if not DEBUG and not FRONTEND_ORIGIN:
+    if os.getenv('WEBSITE_SITE_NAME'):
+        raise ImproperlyConfigured('FRONTEND_ORIGIN must be the exact HTTPS Static Web Apps origin.')
+if FRONTEND_ORIGIN and not DEBUG:
+    parsed_frontend_origin = urlparse(FRONTEND_ORIGIN)
+    if (
+        parsed_frontend_origin.scheme != 'https'
+        or not parsed_frontend_origin.netloc
+        or parsed_frontend_origin.path
+        or parsed_frontend_origin.query
+        or parsed_frontend_origin.fragment
+    ):
+        raise ImproperlyConfigured(
+            'FRONTEND_ORIGIN must be an HTTPS origin without a path, query, or fragment.'
+        )
 
 
 # Application definition
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -37,12 +74,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Trialapp'
+    'corsheaders',
+    'Trialapp',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -73,12 +113,48 @@ WSGI_APPLICATION = 'PlayerRecommender.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR.parent / 'db.sqlite3',
+DATABASE_ENGINE = os.getenv(
+    'DATABASE_ENGINE',
+    'mssql' if os.getenv('WEBSITE_SITE_NAME') else 'sqlite',
+).lower()
+if DATABASE_ENGINE == 'sqlite':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR.parent / 'db.sqlite3',
+        }
     }
-}
+elif DATABASE_ENGINE == 'mssql':
+    required_database_settings = {
+        'NAME': 'AZURE_SQL_DATABASE',
+        'HOST': 'AZURE_SQL_SERVER',
+        'USER': 'AZURE_SQL_USER',
+        'PASSWORD': 'AZURE_SQL_PASSWORD',
+    }
+    missing_database_settings = [
+        env_name for env_name in required_database_settings.values() if not os.getenv(env_name)
+    ]
+    if missing_database_settings:
+        raise ImproperlyConfigured(
+            'Missing Azure SQL settings: ' + ', '.join(missing_database_settings)
+        )
+    DATABASES = {
+        'default': {
+            'ENGINE': 'mssql',
+            'NAME': os.environ['AZURE_SQL_DATABASE'],
+            'HOST': os.environ['AZURE_SQL_SERVER'],
+            'PORT': os.getenv('AZURE_SQL_PORT', '1433'),
+            'USER': os.environ['AZURE_SQL_USER'],
+            'PASSWORD': os.environ['AZURE_SQL_PASSWORD'],
+            'CONN_MAX_AGE': 0,
+            'OPTIONS': {
+                'driver': os.getenv('AZURE_SQL_ODBC_DRIVER', 'ODBC Driver 18 for SQL Server'),
+                'extra_params': 'Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;',
+            },
+        }
+    }
+else:
+    raise ImproperlyConfigured('DATABASE_ENGINE must be either "sqlite" or "mssql".')
 
 
 # Password validation
@@ -115,7 +191,43 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+
+# Cross-origin access is limited to the deployed frontend in production.
+CORS_ALLOWED_ORIGINS = [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else []
+if DEBUG:
+    CORS_ALLOWED_ORIGINS.extend([
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ])
+CORS_ALLOW_CREDENTIALS = False
+CSRF_TRUSTED_ORIGINS = [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else []
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS.extend([
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ])
+
+
+# Azure terminates TLS before forwarding requests to the Linux worker.
+if IS_APP_SERVICE:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = IS_APP_SERVICE and not DEBUG and 'test' not in sys.argv
+SESSION_COOKIE_SECURE = IS_APP_SERVICE and not DEBUG
+CSRF_COOKIE_SECURE = IS_APP_SERVICE and not DEBUG
+SECURE_HSTS_SECONDS = 31_536_000 if IS_APP_SERVICE and not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = IS_APP_SERVICE and not DEBUG
+SECURE_HSTS_PRELOAD = IS_APP_SERVICE and not DEBUG
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
 
 
 # Email

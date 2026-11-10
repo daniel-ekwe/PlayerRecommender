@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { usePlayerData, type PlayerSearchResult } from '../context/PlayerDataContext'
+import { apiUrl } from '../lib/api'
 
 type TeamStatType = 'per_game' | 'summary' | 'per_100'
 
@@ -87,7 +88,7 @@ function TeamProfile({ teamCode, onBack, onOpenPlayers }: TeamProfileProps) {
 
 		setLoading(true)
 		setError(null)
-		fetch(`/api/v1/teams/${encodeURIComponent(teamCode)}/?${params}`, {
+		fetch(apiUrl(`/api/v1/teams/${encodeURIComponent(teamCode)}/?${params}`), {
 			signal: controller.signal,
 			headers: { Accept: 'application/json' },
 		})

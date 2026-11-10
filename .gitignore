@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.sqlite3-*
+.venv/
+venv/
+
+# Local configuration and migration exports
+.env
+.env.*
+!.env.example
+/cloud-migration/
+/Backend/staticfiles/
+
+# Logs and editor files
+*.log
+.vscode/
+.idea/
