@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react'
+import { apiUrl } from '../lib/api'
 
 export type PlayerSearchResult = {
 	id: string
@@ -98,7 +99,7 @@ export function PlayerDataProvider({ children }: PropsWithChildren) {
 			try {
 				const params = new URLSearchParams({ search })
 				const payload = await fetchApi<{ results: PlayerSearchResult[] }>(
-					`/api/v1/players/?${params}`,
+					apiUrl(`/api/v1/players/?${params}`),
 					controller.signal,
 				)
 				setSearchResults(payload.results)
@@ -131,7 +132,10 @@ export function PlayerDataProvider({ children }: PropsWithChildren) {
 		setProfileLoading(true)
 		setProfileError(null)
 
-		fetchApi<PlayerProfile>(`/api/v1/players/${encodeURIComponent(selectedPlayerId)}/`, controller.signal)
+		fetchApi<PlayerProfile>(
+			apiUrl(`/api/v1/players/${encodeURIComponent(selectedPlayerId)}/`),
+			controller.signal,
+		)
 			.then(setSelectedPlayer)
 			.catch((error: unknown) => {
 				if (error instanceof Error && error.name !== 'AbortError') setProfileError(error.message)
@@ -157,7 +161,7 @@ export function PlayerDataProvider({ children }: PropsWithChildren) {
 		const params = new URLSearchParams({ type: statType })
 
 		fetchApi<{ results: PlayerStatRow[] }>(
-			`/api/v1/players/${encodeURIComponent(selectedPlayerId)}/stats/?${params}`,
+			apiUrl(`/api/v1/players/${encodeURIComponent(selectedPlayerId)}/stats/?${params}`),
 			controller.signal,
 		)
 			.then((payload) => setStats(payload.results))
