@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { createApp } from './app.js'
 import { closeDatabasePool } from './db.js'
 
-const port = Number(process.env.API_PORT || 3000)
+const port = Number(process.env.PORT || process.env.API_PORT || 3000)
 const server = createApp().listen(port, () => {
 	console.log(`Player Recommender API listening on port ${port}`)
 })

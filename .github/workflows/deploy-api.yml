@@ -1,0 +1,55 @@
+name: Deploy API to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci --prefix api
+
+      - name: Test API
+        run: npm test --prefix api
+
+      - name: Keep production dependencies
+        run: npm prune --omit=dev --prefix api
+
+      - name: Package API
+        run: |
+          cd api
+          zip -qr ../api-deploy.zip src package.json package-lock.json node_modules
+
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy API to App Service
+        uses: Azure/webapps-deploy@v3
+        with:
+          app-name: player-recommender
+          package: api-deploy.zip
